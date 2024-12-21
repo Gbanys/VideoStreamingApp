@@ -1,0 +1,29 @@
+html, body {
+    background-image: url('tech_background.gif'); 
+    background-size: cover; 
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-attachment: fixed;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+    height: 100%;
+}
+#connection-box{
+    width: 25em;
+    height: 30em;
+    text-align: center;
+    color: white;
+    font-size: 20px;
+    font-family: Arial, Helvetica, sans-serif;
+}
+video {
+    width: 100%;
+    max-width: 600px;
+    border: 1px solid #ccc;
+}
+
+#video-grid {
+    border: 1px solid #ccc;
+}
