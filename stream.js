@@ -26,7 +26,7 @@ navigator.mediaDevices.getUserMedia({ video: true, audio: true })
           await peer.setLocalDescription(answer);
           socket.emit('signal', { target: sender, message: peer.localDescription });
         } else if (message.type === 'answer') {
-          if (peer.signalingState === 'stable') return; // Ignore redundant answers
+          if (peer.signalingState === 'stable') return;
           await peer.setRemoteDescription(new RTCSessionDescription(message));
         } else if (message.candidate) {
           if (peer.signalingState === 'stable' || peer.signalingState === 'have-remote-offer') {
@@ -56,10 +56,11 @@ navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       for(let count = 0; count < socketIds.length; count++){
         let socketId = socketIds[count];
         if(socketId !== userId) {
-          console.log(count);
+          console.log(socketId);
           try {
             createPeerConnection(socketId, stream)
             const peer = peers[socketId];
+            console.log(peer.localDescription);
             socket.emit('signal', {target: socketId, message: peer.localDescription});
           } catch (error) {
             console.log(error);
@@ -83,7 +84,6 @@ function createPeerConnection(userId, stream) {
     ],
   });
 
-  peers[userId] = peer;
   let isNegotiating = false;
 
   peer.onnegotiationneeded = async () => {
@@ -92,6 +92,8 @@ function createPeerConnection(userId, stream) {
     try {
       const offer = await peer.createOffer();
       await peer.setLocalDescription(offer);
+      peers[userId] = peer;
+      console.log('Local Description:', peer.localDescription); // This will show the SDP
       socket.emit('signal', { target: userId, message: peer.localDescription });
     } catch (error) {
       console.error('Error during negotiation:', error);
