@@ -18,17 +18,23 @@ navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       if (!peers[sender]) {
         createPeerConnection(sender, stream);
       }
-
       const peer = peers[sender];
-      if (message.type === 'offer') {
-        await peer.setRemoteDescription(new RTCSessionDescription(message));
-        const answer = await peer.createAnswer();
-        await peer.setLocalDescription(answer);
-        socket.emit('signal', { target: sender, message: peer.localDescription });
-      } else if (message.type === 'answer') {
-        await peer.setRemoteDescription(new RTCSessionDescription(message));
-      } else if (message.candidate) {
-        await peer.addIceCandidate(new RTCIceCandidate(message));
+      try {
+        if (message.type === 'offer') {
+          await peer.setRemoteDescription(new RTCSessionDescription(message));
+          const answer = await peer.createAnswer();
+          await peer.setLocalDescription(answer);
+          socket.emit('signal', { target: sender, message: peer.localDescription });
+        } else if (message.type === 'answer') {
+          if (peer.signalingState === 'stable') return; // Ignore redundant answers
+          await peer.setRemoteDescription(new RTCSessionDescription(message));
+        } else if (message.candidate) {
+          if (peer.signalingState === 'stable' || peer.signalingState === 'have-remote-offer') {
+            await peer.addIceCandidate(new RTCIceCandidate(message));
+          }
+        }
+      } catch (error) {
+        console.error('Error during signaling:', error);
       }
     });
 
@@ -78,6 +84,21 @@ function createPeerConnection(userId, stream) {
   });
 
   peers[userId] = peer;
+  let isNegotiating = false;
+
+  peer.onnegotiationneeded = async () => {
+    if (isNegotiating) return; // Prevent redundant negotiations
+    isNegotiating = true;
+    try {
+      const offer = await peer.createOffer();
+      await peer.setLocalDescription(offer);
+      socket.emit('signal', { target: userId, message: peer.localDescription });
+    } catch (error) {
+      console.error('Error during negotiation:', error);
+    } finally {
+      isNegotiating = false;
+    }
+  };
 
   // Add local stream tracks to the connection
   stream.getTracks().forEach((track) => peer.addTrack(track, stream));
@@ -98,13 +119,6 @@ function createPeerConnection(userId, stream) {
     if (event.candidate) {
       socket.emit('signal', { target: userId, message: event.candidate });
     }
-  };
-
-  // Send an offer to the remote peer
-  peer.onnegotiationneeded = async () => {
-    const offer = await peer.createOffer();
-    await peer.setLocalDescription(offer);
-    socket.emit('signal', { target: userId, message: peer.localDescription });
   };
 }
 
