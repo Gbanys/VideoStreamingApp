@@ -3,7 +3,8 @@ const localVideo = document.createElement('video');
 localVideo.muted = true;
 
 // Socket.io client for signaling
-const socket = io('http://localhost:3000');
+const userId = 'HDEii443jdwji32DE11';
+const socket = io('http://20.77.1.49:3000', { query: { userId } });
 
 // Peer connections
 const peers = {};
@@ -38,7 +39,30 @@ navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       }
     });
 
+    socket.on('user-connected', (socketId) => {
+      if(socketId !== userId){
+        socket.emit('get-chat-users');
+      }
+    });
+
+    socket.on('get-chat-users', (socketIds) => {
+      for(let count = 0; count < socketIds.length; count++){
+        let socketId = socketIds[count];
+        if(socketId !== userId) {
+          console.log(count);
+          try {
+            createPeerConnection(socketId, stream)
+            const peer = peers[socketId];
+            socket.emit('signal', {target: socketId, message: peer.localDescription});
+          } catch (error) {
+            console.log(error);
+          }
+        }
+      }
+    })
+
     socket.emit('join-room');
+
   })
   .catch((error) => {
     console.error('Error accessing media devices:', error);
@@ -59,10 +83,13 @@ function createPeerConnection(userId, stream) {
 
   // Handle incoming tracks from the remote peer
   peer.ontrack = (event) => {
-    const remoteVideo = document.createElement('video');
-    remoteVideo.srcObject = event.streams[0];
-    remoteVideo.addEventListener('loadedmetadata', () => remoteVideo.play());
-    videoGrid.append(remoteVideo);
+    if(!document.getElementById(userId)) {
+      const remoteVideo = document.createElement('video');
+      remoteVideo.id = userId;
+      remoteVideo.srcObject = event.streams[0];
+      remoteVideo.addEventListener('loadedmetadata', () => remoteVideo.play());
+      videoGrid.append(remoteVideo);
+    }
   };
 
   // Send ICE candidates to the signaling server

@@ -1,23 +1,40 @@
 const express = require('express');
 const http = require('http');
-const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
-
-io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
-  socket.on('signal', (data) => {
-    const { target, message } = data;
-    io.to(target).emit('signal', { sender: socket.id, message });
-  });
-
-  socket.on('disconnect', () => {
-    io.emit('user-disconnected', socket.id);
-  });
+const io = require('socket.io')(3000, {
+  cors: {
+    origin: '*',
+  },
 });
 
-server.listen(3000, () => {
-  console.log('Signaling server running on port 3000');
+const users = {};
+
+io.on('connection', (socket) => {
+  const userId = socket.handshake.query.userId;
+  console.log('User connected:', userId);
+  socket.on('join-room', () => {
+    users[userId] = socket;
+    console.log('User joined room:', userId);
+    socket.broadcast.emit('user-connected', userId);
+    socket.emit('user-connected', userId);
+  });
+  socket.on('get-chat-users', () => {
+    socketIds = [];
+    for(let socketId of Object.keys(users)){
+      socketIds.push(socketId);
+    }
+    socket.emit('get-chat-users', socketIds);
+  });
+  socket.on('signal', ({ target, message }) => {
+    if (users[target]) {
+      users[target].emit('signal', { sender: userId, message });
+    }
+  });
+  socket.on('disconnect', () => {
+    delete users[userId];
+    console.log('User disconnected:', userId);
+    socket.broadcast.emit('user-disconnected', userId);
+  });
 });
