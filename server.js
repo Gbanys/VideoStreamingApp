@@ -9,6 +9,8 @@ const io = socketIo(server);
 // Serve static files
 app.use(express.static('public'));
 
+let users = [];
+
 // Handle connections
 io.on('connection', socket => {
     let userId = socket.handshake.query.queryId;
@@ -23,7 +25,9 @@ io.on('connection', socket => {
     // Handle disconnections
     socket.on('disconnect', () => {
         console.log('User disconnected:', userId);
-        socket.emit('disconnect', userId)
+        for(let socketId of users){
+            socket.broadcast.emit('user-disconnected', socketId);
+        }
     });
 });
 
