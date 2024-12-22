@@ -73,6 +73,10 @@ socket.on('signal', (data) => {
     }
 });
 
+socket.on('disconnect', (userId) => {
+    document.getElementById(userId).remove();
+})
+
 // Send ICE candidates to the server
 function sendIceCandidate(candidate) {
     socket.emit('signal', {

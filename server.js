@@ -23,6 +23,7 @@ io.on('connection', socket => {
     // Handle disconnections
     socket.on('disconnect', () => {
         console.log('User disconnected:', userId);
+        socket.emit('disconnect', userId)
     });
 });
 
