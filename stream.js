@@ -1,4 +1,5 @@
-const socket = io("http://20.77.1.49:3000");  // Connect to the socket server
+const userId = "UYEt6d7ewybFQ9IDueeeA";
+const socket = io("http://20.77.1.49:3000", { query: { userId }});
 
 // Global variables
 let localStream;
@@ -51,10 +52,13 @@ function setupPeerConnection() {
 
     // Display remote video stream (other person's video)
     peerConnection.ontrack = (event) => {
-        const remoteVideo = document.createElement('video');
-        remoteVideo.srcObject = event.streams[0];
-        remoteVideo.autoplay = true;
-        videoGrid.appendChild(remoteVideo);
+        if(!document.getElementById(userId)) {
+            const remoteVideo = document.createElement('video');
+            remoteVideo.id = userId;
+            remoteVideo.srcObject = event.streams[0];
+            remoteVideo.autoplay = true;
+            videoGrid.appendChild(remoteVideo);
+        }
     };
 }
 

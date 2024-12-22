@@ -11,7 +11,8 @@ app.use(express.static('public'));
 
 // Handle connections
 io.on('connection', socket => {
-    console.log('User connected:', socket.id);
+    let userId = socket.handshake.query.queryId;
+    console.log('User connected:', userId);
 
     // Forward signaling messages to the other peer
     socket.on('signal', (data) => {
@@ -21,7 +22,7 @@ io.on('connection', socket => {
 
     // Handle disconnections
     socket.on('disconnect', () => {
-        console.log('User disconnected:', socket.id);
+        console.log('User disconnected:', userId);
     });
 });
 
