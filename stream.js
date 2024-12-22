@@ -5,6 +5,7 @@ const socket = io("http://20.77.1.49:3000", { query: { userId }});
 let localStream;
 let peerConnection;
 const videoGrid = document.getElementById("video-grid");
+const connectedUsers = new Map(); // Map to track users and their video elements
 
 // Constraints for video/audio
 const constraints = {
@@ -23,6 +24,9 @@ navigator.mediaDevices.getUserMedia(constraints)
         localVideo.muted = true;  // Mute the local video to avoid feedback
         localVideo.autoplay = true;
         videoGrid.appendChild(localVideo);
+
+         // Track local user's video element (optional, for consistency)
+        connectedUsers.set('local', localVideo);
 
         // Initialize the peer connection now that the local stream is available
         setupPeerConnection();
@@ -58,6 +62,8 @@ function setupPeerConnection() {
             remoteVideo.srcObject = event.streams[0];
             remoteVideo.autoplay = true;
             videoGrid.appendChild(remoteVideo);
+            // Use a unique identifier for the video (socket ID in a real-world app)
+            connectedUsers.set(userId, remoteVideo);
         }
     };
 }
@@ -73,9 +79,13 @@ socket.on('signal', (data) => {
     }
 });
 
-socket.on('disconnect', (userId) => {
-    document.getElementById(userId).remove();
-})
+socket.on('user-disconnected', (userId) => {
+    const videoElement = connectedUsers.get(userId);
+    if (videoElement) {
+        videoGrid.removeChild(videoElement); // Remove the video from the grid
+        connectedUsers.delete(userId); // Remove the user from the map
+    }
+});
 
 // Send ICE candidates to the server
 function sendIceCandidate(candidate) {
