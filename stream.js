@@ -1,132 +1,97 @@
-const videoGrid = document.getElementById('video-grid');
-const localVideo = document.createElement('video');
-localVideo.muted = true;
+const socket = io("http://20.77.1.49:3000");  // Connect to the socket server
 
-// Socket.io client for signaling
-const userId = 'UYEt6d7ewybFQ9IDueeeA';
-const socket = io('http://20.77.1.49:3000', { query: { userId } });
+// Global variables
+let localStream;
+let peerConnection;
+const videoGrid = document.getElementById("video-grid");
 
-// Peer connections
-const peers = {};
+// Your webcam constraints
+const constraints = {
+    video: true,
+    audio: true
+};
 
-// Initialize local video stream
-navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-  .then((stream) => {
-    addVideoStream(localVideo, stream);
-
-    socket.on('signal', async ({ sender, message }) => {
-      if (!peers[sender]) {
-        createPeerConnection(sender, stream);
-      }
-      const peer = peers[sender];
-      try {
-        if (message.type === 'offer') {
-          await peer.setRemoteDescription(new RTCSessionDescription(message));
-          const answer = await peer.createAnswer();
-          await peer.setLocalDescription(answer);
-          socket.emit('signal', { target: sender, message: peer.localDescription });
-        } else if (message.type === 'answer') {
-          if (peer.signalingState === 'stable') return;
-          await peer.setRemoteDescription(new RTCSessionDescription(message));
-        } else if (message.candidate) {
-          if (peer.signalingState === 'stable' || peer.signalingState === 'have-remote-offer') {
-            await peer.addIceCandidate(new RTCIceCandidate(message));
-          }
-        }
-      } catch (error) {
-        console.error('Error during signaling:', error);
-      }
-    });
-
-    socket.on('user-disconnected', (userId) => {
-      if (peers[userId]) {
-        peers[userId].close();
-        delete peers[userId];
-        document.getElementById(userId).remove();
-      }
-    });
-
-    socket.on('user-connected', (socketId) => {
-      if(socketId !== userId){
-        socket.emit('get-chat-users');
-      }
-    });
-
-    socket.on('get-chat-users', (socketIds) => {
-      for(let count = 0; count < socketIds.length; count++){
-        let socketId = socketIds[count];
-        if(socketId !== userId) {
-          console.log(socketId);
-          try {
-            createPeerConnection(socketId, stream)
-            const peer = peers[socketId];
-            console.log(peer.localDescription);
-            socket.emit('signal', {target: socketId, message: peer.localDescription});
-          } catch (error) {
-            console.log(error);
-          }
-        }
-      }
+// Get the local webcam stream and display it
+navigator.mediaDevices.getUserMedia(constraints)
+    .then(stream => {
+        localStream = stream;
+        const localVideo = document.createElement("video");
+        localVideo.srcObject = stream;
+        localVideo.muted = true;  // Mute local video
+        localVideo.autoplay = true;
+        videoGrid.appendChild(localVideo);
     })
+    .catch(error => console.error('Error accessing webcam: ', error));
 
-    socket.emit('join-room');
-
-  })
-  .catch((error) => {
-    console.error('Error accessing media devices:', error);
-  });
-
-// Create a new peer connection
-function createPeerConnection(userId, stream) {
-  const peer = new RTCPeerConnection({
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-    ],
-  });
-
-  let isNegotiating = false;
-
-  peer.onnegotiationneeded = async () => {
-    if (isNegotiating) return; // Prevent redundant negotiations
-    isNegotiating = true;
-    try {
-      const offer = await peer.createOffer();
-      await peer.setLocalDescription(offer);
-      peers[userId] = peer;
-      console.log('Local Description:', peer.localDescription); // This will show the SDP
-      socket.emit('signal', { target: userId, message: peer.localDescription });
-    } catch (error) {
-      console.error('Error during negotiation:', error);
-    } finally {
-      isNegotiating = false;
+// Handle signaling and peer connection
+socket.on('signal', (data) => {
+    if (data.type === 'offer') {
+        handleOffer(data);
+    } else if (data.type === 'answer') {
+        handleAnswer(data);
+    } else if (data.type === 'ice-candidate') {
+        handleIceCandidate(data);
     }
-  };
+});
 
-  // Add local stream tracks to the connection
-  stream.getTracks().forEach((track) => peer.addTrack(track, stream));
-
-  // Handle incoming tracks from the remote peer
-  peer.ontrack = (event) => {
-    if(!document.getElementById(userId)) {
-      const remoteVideo = document.createElement('video');
-      remoteVideo.id = userId;
-      remoteVideo.srcObject = event.streams[0];
-      remoteVideo.addEventListener('loadedmetadata', () => remoteVideo.play());
-      videoGrid.append(remoteVideo);
-    }
-  };
-
-  // Send ICE candidates to the signaling server
-  peer.onicecandidate = (event) => {
-    if (event.candidate) {
-      socket.emit('signal', { target: userId, message: event.candidate });
-    }
-  };
+// Send ICE candidates to the server
+function sendIceCandidate(candidate) {
+    socket.emit('signal', {
+        type: 'ice-candidate',
+        candidate: candidate
+    });
 }
 
-// Add a video stream to the DOM
-function addVideoStream(videoElement, stream) {
-  videoElement.srcObject = stream;
-  videoElement.addEventListener('loadedmetadata', () => videoElement.play());
-  videoGrid.append(videoElement);
+// Send an offer to the server
+function sendOffer(offer) {
+    socket.emit('signal', {
+        type: 'offer',
+        offer: offer
+    });
+}
+
+// Send an answer to the server
+function sendAnswer(answer) {
+    socket.emit('signal', {
+        type: 'answer',
+        answer: answer
+    });
+}
+
+// Handle incoming offer
+function handleOffer(data) {
+    peerConnection = new RTCPeerConnection();
+
+    peerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+            sendIceCandidate(event.candidate);
+        }
+    };
+
+    peerConnection.ontrack = (event) => {
+        const remoteVideo = document.createElement('video');
+        remoteVideo.srcObject = event.streams[0];
+        remoteVideo.autoplay = true;
+        videoGrid.appendChild(remoteVideo);
+    };
+
+    localStream.getTracks().forEach(track => {
+        peerConnection.addTrack(track, localStream);
+    });
+
+    peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer))
+        .then(() => peerConnection.createAnswer())
+        .then(answer => peerConnection.setLocalDescription(answer))
+        .then(() => sendAnswer(peerConnection.localDescription));
+}
+
+// Handle incoming answer
+function handleAnswer(data) {
+    peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+}
+
+// Handle incoming ICE candidates
+function handleIceCandidate(data) {
+    const candidate = new RTCIceCandidate(data.candidate);
+    peerConnection.addIceCandidate(candidate);
 }

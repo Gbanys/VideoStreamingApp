@@ -1,40 +1,31 @@
 const express = require('express');
 const http = require('http');
+const socketIo = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = require('socket.io')(3000, {
-  cors: {
-    origin: '*',
-  },
+const io = socketIo(server);
+
+// Serve static files
+app.use(express.static('public'));
+
+// Handle connections
+io.on('connection', socket => {
+    console.log('User connected:', socket.id);
+
+    // Forward signaling messages to the other peer
+    socket.on('signal', (data) => {
+        // Send the message to the other peer
+        socket.broadcast.emit('signal', data);
+    });
+
+    // Handle disconnections
+    socket.on('disconnect', () => {
+        console.log('User disconnected:', socket.id);
+    });
 });
 
-const users = {};
-
-io.on('connection', (socket) => {
-  const userId = socket.handshake.query.userId;
-  console.log('User connected:', userId);
-  socket.on('join-room', () => {
-    users[userId] = socket;
-    console.log('User joined room:', userId);
-    socket.broadcast.emit('user-connected', userId);
-    socket.emit('user-connected', userId);
-  });
-  socket.on('get-chat-users', () => {
-    socketIds = [];
-    for(let socketId of Object.keys(users)){
-      socketIds.push(socketId);
-    }
-    socket.emit('get-chat-users', socketIds);
-  });
-  socket.on('signal', ({ target, message }) => {
-    if (users[target]) {
-      users[target].emit('signal', { sender: userId, message });
-    }
-  });
-  socket.on('disconnect', () => {
-    delete users[userId];
-    console.log('User disconnected:', userId);
-    socket.broadcast.emit('user-disconnected', userId);
-  });
+// Start server on port 3000
+server.listen(3000, () => {
+    console.log("Server is running on port 3000");
 });
