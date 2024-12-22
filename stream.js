@@ -3,7 +3,7 @@ const localVideo = document.createElement('video');
 localVideo.muted = true;
 
 // Socket.io client for signaling
-const userId = 'HDEii443jdwji32DE11';
+const userId = 'UYEt6d7ewybFQ9IDueeeA';
 const socket = io('http://20.77.1.49:3000', { query: { userId } });
 
 // Peer connections
@@ -36,6 +36,7 @@ navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       if (peers[userId]) {
         peers[userId].close();
         delete peers[userId];
+        document.getElementById(userId).remove();
       }
     });
 

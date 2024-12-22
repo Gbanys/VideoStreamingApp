@@ -25,11 +25,10 @@ html, body {
 }
 
 #video-grid {
-    border: 1px solid #ccc;
     display: flex;
     flex-wrap: wrap; /* Wrap items to the next row */
     justify-content: flex-start; /* Align videos to the left */
-    gap: 20px; /* Add spacing between videos */
+    gap: 100px; /* Add spacing between videos */
     padding: 10px; /* Add padding inside the grid */
     max-width: 80em; /* Limit the maximum width */
     background: rgba(0, 0, 0, 0.5); /* Optional: Add a semi-transparent background */
