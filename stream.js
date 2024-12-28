@@ -1,10 +1,11 @@
-const userId = "UYEt6d7ewybFQ9IDueeeA"; // Unique identifier for the user
+const userId = "google123"; // Unique identifier for the user
 const roomId = "room123"; // Unique identifier for the room
 const socket = io("http://18.175.207.152:3000", { query: { userId, roomId } });
 
 // Global variables
 let localStream;
 let peerConnection;
+let peerUserId = "sewy123";
 const videoGrid = document.getElementById("video-grid");
 const connectedUsers = new Map(); // Map to track users and their video elements
 
@@ -36,7 +37,7 @@ function startLocalWebcam() {
 
             // Ensure the peer connection is initialized
             if (!peerConnection) {
-                setupPeerConnection();  // Initialize peer connection if not already done
+                setupPeerConnection(peerUserId);  // Initialize peer connection if not already done
             }
 
             // Re-add local tracks to the peer connection if it's initialized
@@ -54,7 +55,7 @@ function startLocalWebcam() {
             document.getElementById('webcam').onclick = stopWebcam;
             document.getElementById('webcam').innerText = "videocam";
             // Notify the remote peer that the video is started
-            socket.emit('signal', { type: 'video-started', roomId });
+            socket.emit('signal', { type: 'video-started', roomId: roomId, userId: userId});
 
             // Optionally, re-offer the connection to refresh the state
             makeOffer();
@@ -83,12 +84,12 @@ function stopWebcam() {
 
         // Notify the remote peer that the video is stopped
         document.getElementById('webcam').onclick = startLocalWebcam;
-        socket.emit('signal', { type: 'video-stopped', roomId });
+        socket.emit('signal', { type: 'video-stopped', roomId: roomId, userId: userId});
     }
 }
 
 // Initialize peer connection
-function setupPeerConnection() {
+function setupPeerConnection(peerUserId) {
     peerConnection = new RTCPeerConnection();
 
     // Add local tracks to the peer connection
@@ -105,14 +106,21 @@ function setupPeerConnection() {
 
     // Display remote video stream (other person's video)
     peerConnection.ontrack = (event) => {
-        const remoteUserId = event.streams[0].id; // Assumes the stream ID is the userId
-        if (!document.getElementById(remoteUserId)) {
+        //const remoteUserId = event.streams[0].id; // Assumes the stream ID is the userI
+        if (!document.getElementById(peerUserId)) {
             const remoteVideo = document.createElement('video');
-            remoteVideo.id = remoteUserId;
+            remoteVideo.id = peerUserId;
             remoteVideo.srcObject = event.streams[0];
             remoteVideo.autoplay = true;
             videoGrid.appendChild(remoteVideo);
-            connectedUsers.set(remoteUserId, remoteVideo);
+            connectedUsers.set(peerUserId, remoteVideo);
+        }
+        else{
+            const remoteVideo = document.getElementById(peerUserId);
+            remoteVideo.id = peerUserId;
+            remoteVideo.srcObject = event.streams[0];
+            remoteVideo.autoplay = true;
+            connectedUsers.set(peerUserId, remoteVideo)
         }
     };
 }
@@ -120,6 +128,9 @@ function setupPeerConnection() {
 // Listen for signaling data from the server
 socket.on('signal', (data) => {
     if (data.type === 'video-stopped') {
+        console.log("VIDEO STOPPED EVENT");
+        console.log(data.userId);
+        console.log(connectedUsers);
         const remoteVideo = connectedUsers.get(data.userId);
         if (remoteVideo) {
             remoteVideo.srcObject = null;
@@ -142,12 +153,27 @@ socket.on('user-connected', (data) => {
 
 socket.on('user-disconnected', (data) => {
     const videoElement = connectedUsers.get(data.userId);
+    console.log("USER DISCONNECTED");
+    console.log(data.userId);
+    console.log(connectedUsers);
+    resetPeerConnection();
     if (videoElement) {
         videoGrid.removeChild(videoElement); // Remove the video from the grid
         connectedUsers.delete(data.userId); // Remove the user from the map
     }
     console.log(`User disconnected: ${data.userId} from room: ${data.roomId}`);
 });
+
+function resetPeerConnection() {
+    if (peerConnection) {
+        peerConnection.getSenders().forEach(sender => {
+            peerConnection.removeTrack(sender);
+        });
+        peerConnection.close();
+        peerConnection = null;
+    }
+    setupPeerConnection(peerUserId); // Reinitialize the peer connection
+}
 
 // Send ICE candidates to the server
 function sendIceCandidate(candidate) {
