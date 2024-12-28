@@ -1,5 +1,6 @@
 const userId = "UYEt6d7ewybFQ9IDueeeA";
-const socket = io("http://20.77.1.49:3000", { query: { userId }});
+const roomId = "12345"
+const socket = io("http://18.175.207.152:3000", { query: { roomId }});
 
 // Global variables
 let localStream;
@@ -14,29 +15,56 @@ const constraints = {
 };
 
 // Get local stream (user's webcam)
-navigator.mediaDevices.getUserMedia(constraints)
-    .then(stream => {
-        localStream = stream;
+function startLocalWebcam() {
+    navigator.mediaDevices.getUserMedia(constraints)
+        .then(stream => {
+            localStream = stream;
+            document.getElementById('webcam').onclick = () => {
+                stopWebcam();
+            }
+            let localVideo;
+            // Display local video (your webcam)
+            if(!document.getElementById('local')) {
+                localVideo = document.createElement("video");
+                localVideo.id = 'local';
+                localVideo.srcObject = stream;
+                localVideo.muted = true;  // Mute the local video to avoid feedback
+                localVideo.autoplay = true;
+                videoGrid.appendChild(localVideo);
+            }
+            else{
+                localVideo = document.getElementById('local');
+                localVideo.srcObject = stream;
+                localVideo.muted = true;  // Mute the local video to avoid feedback
+                localVideo.autoplay = true;
+                document.getElementById('webcam').innerText = "videocam";
+            }
 
-        // Display local video (your webcam)
-        const localVideo = document.createElement("video");
-        localVideo.srcObject = stream;
-        localVideo.muted = true;  // Mute the local video to avoid feedback
-        localVideo.autoplay = true;
-        videoGrid.appendChild(localVideo);
+            // Track local user's video element (optional, for consistency)
+            connectedUsers.set('local', localVideo);
 
-         // Track local user's video element (optional, for consistency)
-        connectedUsers.set('local', localVideo);
+            // Initialize the peer connection now that the local stream is available
+            setupPeerConnection();
 
-        // Initialize the peer connection now that the local stream is available
-        setupPeerConnection();
+            // Create offer after peer connection is ready
+            makeOffer();
+        })
+        .catch(error => {
+            console.error('Error accessing webcam: ', error);
+        });
+}
 
-        // Create offer after peer connection is ready
-        makeOffer();
-    })
-    .catch(error => {
-        console.error('Error accessing webcam: ', error);
-    });
+function stopWebcam() {
+  if (localStream) {
+    localStream.getTracks().forEach((track) => track.stop()); // Stop all tracks
+    localStream = null;
+    console.log("Webcam stopped");
+    document.getElementById('webcam').innerText = "videocam_off";
+    document.getElementById('webcam').onclick = () => {
+        startLocalWebcam();
+    }
+  }
+}
 
 // Initialize peer connection
 function setupPeerConnection() {
@@ -141,3 +169,5 @@ function makeOffer() {
         console.error('Peer connection not initialized yet.');
     }
 }
+
+startLocalWebcam();

@@ -3,16 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'"> -->
     <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
     <title>VXStream</title>
+    <script src="https://cdn.socket.io/4.5.1/socket.io.min.js" defer></script>
+    <script src="stream.js" defer></script>
+    <script src="session_menu.js" defer></script>
 </head>
 <body>
-    <div id="connection-box">
-        <h2>Enter the information to connect:</h2>
-        <div id="video-grid"></div>
-        <script src="https://cdn.socket.io/4.5.1/socket.io.min.js"></script>
-        <script src="stream.js"></script>
-    </div>
+    <main>
+        <div id="connection-box">
+            <div id="video-grid"></div>
+        </div>
+        <div class="session-menu">
+            <span id="webcam" class="material-symbols-outlined" onclick="stopWebcam()">videocam</span>
+            <span id="microphone" class="material-symbols-outlined">mic</span>
+            <span id="chat_bubble" class="material-symbols-outlined">chat_bubble</span>
+            <span id="reaction" class="material-symbols-outlined">add_reaction</span>
+            <span id="end_call" class="material-symbols-outlined">call_end</span>
+            <p id="time"></p>
+        </div>
+    </main>
 </body>
 </html>

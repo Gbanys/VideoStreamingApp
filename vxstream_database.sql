@@ -1,0 +1,28 @@
+CREATE DATABASE IF NOT EXISTS vxstream;
+
+USE vxstream;
+
+CREATE TABLE IF NOT EXISTS chatroom (
+  roomId VARCHAR(255) NOT NULL PRIMARY KEY,
+  password VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS chatuser (
+  userId VARCHAR(255) NOT NULL PRIMARY KEY,
+  username VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS chatuser_chatroom (
+  userId VARCHAR(255) NOT NULL,
+  roomId VARCHAR(255) NOT NULL,
+  PRIMARY KEY (userId, roomId),
+  FOREIGN KEY (userId) REFERENCES chatuser(userId) ON DELETE CASCADE,
+  FOREIGN KEY (roomId) REFERENCES chatroom(roomId) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS chatmessage (
+  messageId INT AUTO_INCREMENT PRIMARY KEY,
+  text VARCHAR(1000),
+  userId VARCHAR(255),
+  FOREIGN KEY (userId) REFERENCES chatuser(userId)
+);

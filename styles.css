@@ -4,11 +4,18 @@ html, body {
     background-repeat: no-repeat;
     background-position: center center;
     background-attachment: fixed;
-    display: flex;
-    justify-content: center;
-    align-items: center;
     margin: 0;
     height: 100%;
+}
+
+main{
+    background-color: red;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    justify-items: center;
+    height: 100%;
+    gap: 25%;
 }
 
 #connection-box {
@@ -19,26 +26,63 @@ html, body {
     display: flex;
     justify-content: center;
     align-items: center;
-    flex-direction: column; /* Stack elements vertically */
-    gap: 20px; /* Space between elements inside the box */
-    width: auto; /* Allow dynamic resizing */
+    flex-direction: column;
+    gap: 20px;
+    width: auto;
 }
 
 #video-grid {
     display: flex;
-    flex-wrap: wrap; /* Wrap items to the next row */
-    justify-content: flex-start; /* Align videos to the left */
-    gap: 100px; /* Add spacing between videos */
-    padding: 10px; /* Add padding inside the grid */
-    max-width: 80em; /* Limit the maximum width */
-    background: rgba(0, 0, 0, 0.5); /* Optional: Add a semi-transparent background */
-    border-radius: 10px; /* Optional: Add rounded corners */
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Optional: Add a shadow for a polished look */
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 100px;
+    padding: 10px;
+    max-width: 80em;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
 video {
-    width: 20em; /* Set fixed width for videos */
-    height: auto; /* Maintain aspect ratio */
+    width: 20em;
+    height: auto;
     border: 1px solid #666;
     border-radius: 5px;
+}
+
+.session-menu{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2%;
+    border: 1px solid black;
+    border-radius: 15px;
+    background: #3c3c3c;
+    width: 40%;
+    margin-left: auto;
+    margin-right: auto;
+    color: white;
+}
+
+.material-symbols-outlined{
+    background: #3c3c3c;
+    color: white;
+    font-size: 50px;
+    cursor: pointer;
+    padding: 1%;
+}
+
+.material-symbols-outlined:hover{
+    background: #706f6f;
+    color: white;
+}
+
+#end_call{
+    background-color: #9e0404;
+    padding: 0 1%;
+    height: 100%;
+}
+
+#end_call:hover{
+    background-color: #b51717;
 }
