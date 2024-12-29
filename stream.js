@@ -1,11 +1,10 @@
 const userId = "google123"; // Unique identifier for the user
 const roomId = "room123"; // Unique identifier for the room
-const socket = io("http://18.175.207.152:3000", { query: { userId, roomId } });
+const socket = io("http://localhost:3000", { query: { userId, roomId } });
 
-// Global variables
 let localStream;
-let peerConnection;
-let peerUserId = "sewy123";
+let userIds = [];
+let peerConnections = new Map(); // Map to track peer connections by userId
 const videoGrid = document.getElementById("video-grid");
 const connectedUsers = new Map(); // Map to track users and their video elements
 
@@ -15,13 +14,15 @@ const constraints = {
     audio: true
 };
 
-// Get local stream (user's webcam)
+function retrieveAllUsersFromDatabase(){
+    socket.emit('get-all-users-from-database', { roomId: roomId });
+}
+
 function startLocalWebcam() {
     navigator.mediaDevices.getUserMedia(constraints)
         .then(stream => {
             localStream = stream;
 
-            // Reuse or create local video element
             let localVideo = document.getElementById('local');
             if (!localVideo) {
                 localVideo = document.createElement("video");
@@ -35,15 +36,16 @@ function startLocalWebcam() {
             // Track local user's video element
             connectedUsers.set('local', localVideo);
 
-            // Ensure the peer connection is initialized
-            if (!peerConnection) {
-                setupPeerConnection(peerUserId);  // Initialize peer connection if not already done
-            }
+            userIds.forEach(userId => {
+                if (!peerConnections.has(userId)) {
+                    setupPeerConnection(userId);
+                }
 
-            // Re-add local tracks to the peer connection if it's initialized
-            if (peerConnection) {
-                const senders = peerConnection.getSenders();
+                const peerConnection = peerConnections.get(userId);
+
+                // Re-add local tracks to the peer connection if it's initialized
                 localStream.getTracks().forEach(track => {
+                    const senders = peerConnection.getSenders();
                     const sender = senders.find(s => s.track && s.track.kind === track.kind);
                     if (sender) {
                         sender.replaceTrack(track);  // Replace the track if sender already exists
@@ -51,13 +53,12 @@ function startLocalWebcam() {
                         peerConnection.addTrack(track, localStream);  // Otherwise, add a new track
                     }
                 });
-            }
+            });
+
             document.getElementById('webcam').onclick = stopWebcam;
             document.getElementById('webcam').innerText = "videocam";
-            // Notify the remote peer that the video is started
-            socket.emit('signal', { type: 'video-started', roomId: roomId, userId: userId});
+            socket.emit('signal', { type: 'video-started', roomId: roomId, userId: userId });
 
-            // Optionally, re-offer the connection to refresh the state
             makeOffer();
         })
         .catch(error => {
@@ -67,29 +68,30 @@ function startLocalWebcam() {
 
 function stopWebcam() {
     if (localStream) {
-        // Remove the tracks from the peer connection
-        const senders = peerConnection.getSenders();
-        senders.forEach(sender => {
-            if (sender.track) {
-                peerConnection.removeTrack(sender);
-            }
+        // Remove the tracks from all peer connections
+        peerConnections.forEach((peerConnection, peerUserId) => {
+            // Remove all tracks from this peer connection
+            const senders = peerConnection.getSenders();
+            senders.forEach(sender => {
+                if (sender.track) {
+                    peerConnection.removeTrack(sender);
+                }
+            });
         });
 
-        // Stop the local tracks
         localStream.getTracks().forEach(track => track.stop());
         localStream = null;
 
         document.getElementById('webcam').innerText = "videocam_off";
-
-        // Notify the remote peer that the video is stopped
         document.getElementById('webcam').onclick = startLocalWebcam;
-        socket.emit('signal', { type: 'video-stopped', roomId: roomId, userId: userId});
+        socket.emit('signal', { type: 'video-stopped', roomId: roomId, userId: userId });
     }
 }
 
+
 // Initialize peer connection
 function setupPeerConnection(peerUserId) {
-    peerConnection = new RTCPeerConnection();
+    const peerConnection = new RTCPeerConnection();
 
     // Add local tracks to the peer connection
     localStream.getTracks().forEach(track => {
@@ -99,7 +101,7 @@ function setupPeerConnection(peerUserId) {
     // Handle ICE candidates
     peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
-            sendIceCandidate(event.candidate);
+            sendIceCandidate(event.candidate, peerUserId);
         }
     };
 
@@ -122,10 +124,23 @@ function setupPeerConnection(peerUserId) {
             connectedUsers.set(peerUserId, remoteVideo)
         }
     };
+    peerConnections.set(peerUserId, peerConnection);
 }
+
+socket.on('all-users-retrieved', (data) => {
+    if (!data || !data.chat_room_users) {
+        console.error('Invalid data received from server');
+        return;
+    }
+    userIds = data.chat_room_users;
+    console.log('Users retrieved:', userIds);
+    startLocalWebcam();
+});
+
 
 // Listen for signaling data from the server
 socket.on('signal', (data) => {
+    console.log("Hello world");
     if (data.type === 'video-stopped') {
         const remoteVideo = connectedUsers.get(data.userId);
         if (remoteVideo) {
@@ -145,85 +160,117 @@ socket.on('signal', (data) => {
 
 socket.on('user-connected', (data) => {
     console.log(`User connected: ${data.userId} in room: ${data.roomId}`);
+    if (!peerConnections.has(data.userId)) {
+        setupPeerConnection(data.userId);  // Set up connection for the new user
+    }
+    socket.emit('get-all-users-from-database', { roomId: roomId });
 });
 
 socket.on('user-disconnected', (data) => {
     const videoElement = connectedUsers.get(data.userId);
-    resetPeerConnection();
     if (videoElement) {
-        videoGrid.removeChild(videoElement); // Remove the video from the grid
+        videoGrid.removeChild(videoElement);  // Remove the video from the grid
         connectedUsers.delete(data.userId); // Remove the user from the map
     }
+
+    const peerConnection = peerConnections.get(data.userId);
+    if (peerConnection) {
+        peerConnection.close();  // Close the peer connection
+        peerConnections.delete(data.userId);  // Remove the peer connection from the map
+    }
+
     console.log(`User disconnected: ${data.userId} from room: ${data.roomId}`);
 });
 
-function resetPeerConnection() {
-    if (peerConnection) {
-        peerConnection.getSenders().forEach(sender => {
-            peerConnection.removeTrack(sender);
-        });
-        peerConnection.close();
-        peerConnection = null;
-    }
-    setupPeerConnection(peerUserId); // Reinitialize the peer connection
-}
 
-// Send ICE candidates to the server
-function sendIceCandidate(candidate) {
+// function resetPeerConnection() {
+//     if (peerConnection) {
+//         peerConnection.getSenders().forEach(sender => {
+//             peerConnection.removeTrack(sender);
+//         });
+//         peerConnection.close();
+//         peerConnection = null;
+//     }
+//     setupPeerConnection(peerUserId); // Reinitialize the peer connection
+// }
+
+// Send ICE candidates to the server (with userId)
+function sendIceCandidate(candidate, peerUserId) {
     socket.emit('signal', {
         type: 'ice-candidate',
         candidate: candidate,
-        roomId
+        roomId,
+        userId: peerUserId  // Include the userId in the signaling message
     });
 }
 
-// Send offer to the other peer
-function sendOffer(offer) {
+// Send offer to the other peer (with userId)
+function sendOffer(offer, peerUserId) {
     socket.emit('signal', {
         type: 'offer',
         offer: offer,
-        roomId
+        roomId,
+        userId: peerUserId  // Include the userId in the signaling message
     });
 }
 
-// Send answer to the other peer
-function sendAnswer(answer) {
+// Send answer to the other peer (with userId)
+function sendAnswer(answer, peerUserId) {
     socket.emit('signal', {
         type: 'answer',
         answer: answer,
-        roomId
+        roomId,
+        userId: peerUserId  // Include the userId in the signaling message
     });
 }
 
 // Handle received offer
 function handleOffer(data) {
+    const peerUserId = data.userId;  // Retrieve the userId of the offer sender
+
+    // If the peer connection doesn't already exist, create it
+    if (!peerConnections.has(peerUserId)) {
+        setupPeerConnection(peerUserId);
+    }
+
+    const peerConnection = peerConnections.get(peerUserId);
     peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer))
         .then(() => peerConnection.createAnswer())
         .then(answer => peerConnection.setLocalDescription(answer))
-        .then(() => sendAnswer(peerConnection.localDescription));
+        .then(() => sendAnswer(peerConnection.localDescription, peerUserId));
 }
 
-// Handle received answer
 function handleAnswer(data) {
+    const peerUserId = data.userId;
+    const peerConnection = peerConnections.get(peerUserId);
     peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
 }
 
-// Handle incoming ICE candidates
 function handleIceCandidate(data) {
+    const peerUserId = data.userId;
+    const peerConnection = peerConnections.get(peerUserId);
     const candidate = new RTCIceCandidate(data.candidate);
     peerConnection.addIceCandidate(candidate);
 }
 
+
 // Send the offer once the peer connection is ready
 function makeOffer() {
-    if (peerConnection) {
-        peerConnection.createOffer()
-            .then(offer => peerConnection.setLocalDescription(offer))
-            .then(() => sendOffer(peerConnection.localDescription))
-            .catch(err => console.error('Error creating offer: ', err));
+    if (localStream) {
+        userIds.forEach(userId => {
+            if (!peerConnections.has(userId)) {
+                setupPeerConnection(userId);
+            }
+            const peerConnection = peerConnections.get(userId);
+            peerConnection.createOffer()
+                .then(offer => peerConnection.setLocalDescription(offer))
+                .then(() => sendOffer(peerConnection.localDescription, userId))
+                .catch(err => console.error('Error creating offer: ', err));
+        });
     } else {
-        console.error('Peer connection not initialized yet.');
+        console.error('Local stream not available.');
     }
 }
 
-startLocalWebcam();
+
+retrieveAllUsersFromDatabase()
