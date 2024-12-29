@@ -54,6 +54,7 @@ video {
     display: flex;
     justify-content: center;
     align-items: center;
+    flex-wrap: wrap;
     gap: 2%;
     border: 1px solid black;
     border-radius: 15px;
@@ -81,6 +82,10 @@ video {
     background-color: #9e0404;
     padding: 0 1%;
     height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 10%;
 }
 
 #end_call:hover{

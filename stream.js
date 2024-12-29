@@ -79,7 +79,6 @@ function stopWebcam() {
         localStream.getTracks().forEach(track => track.stop());
         localStream = null;
 
-        console.log("Webcam stopped");
         document.getElementById('webcam').innerText = "videocam_off";
 
         // Notify the remote peer that the video is stopped
@@ -128,9 +127,6 @@ function setupPeerConnection(peerUserId) {
 // Listen for signaling data from the server
 socket.on('signal', (data) => {
     if (data.type === 'video-stopped') {
-        console.log("VIDEO STOPPED EVENT");
-        console.log(data.userId);
-        console.log(connectedUsers);
         const remoteVideo = connectedUsers.get(data.userId);
         if (remoteVideo) {
             remoteVideo.srcObject = null;
@@ -153,9 +149,6 @@ socket.on('user-connected', (data) => {
 
 socket.on('user-disconnected', (data) => {
     const videoElement = connectedUsers.get(data.userId);
-    console.log("USER DISCONNECTED");
-    console.log(data.userId);
-    console.log(connectedUsers);
     resetPeerConnection();
     if (videoElement) {
         videoGrid.removeChild(videoElement); // Remove the video from the grid
