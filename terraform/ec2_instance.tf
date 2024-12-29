@@ -75,10 +75,10 @@ resource "aws_instance" "node-js-server" {
     sudo apt install -y npm
 
     cat << 'EOF' > /home/ubuntu/server.js
-    ${file("/home/gbanys/repositories/VideoStreamingApp/server.js")}
+    ${file("/home/gbanys/repositories/VideoStreamingApp/backend/server.js")}
     EOF
 
-    sudo npm install express http socket.io
+    sudo npm install express http socket.io mysql2
     sudo nohup node /home/ubuntu/server.js &
   EOT
 

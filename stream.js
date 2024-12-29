@@ -15,7 +15,7 @@ const constraints = {
 };
 
 function retrieveAllUsersFromDatabase(){
-    socket.emit('get-all-users-from-database', { roomId: roomId });
+    socket.emit('get-all-users-from-database', { roomId: roomId, userId: userId });
 }
 
 function startLocalWebcam() {
@@ -36,12 +36,12 @@ function startLocalWebcam() {
             // Track local user's video element
             connectedUsers.set('local', localVideo);
 
-            userIds.forEach(userId => {
-                if (!peerConnections.has(userId)) {
-                    setupPeerConnection(userId);
+            userIds.forEach(peerUserId => {
+                if (!peerConnections.has(peerUserId)) {
+                    setupPeerConnection(peerUserId);
                 }
 
-                const peerConnection = peerConnections.get(userId);
+                const peerConnection = peerConnections.get(peerUserId);
 
                 // Re-add local tracks to the peer connection if it's initialized
                 localStream.getTracks().forEach(track => {
@@ -132,6 +132,9 @@ socket.on('all-users-retrieved', (data) => {
         console.error('Invalid data received from server');
         return;
     }
+    else if(data.userId !== userId){
+        return;
+    }
     userIds = data.chat_room_users;
     console.log('Users retrieved:', userIds);
     startLocalWebcam();
@@ -140,7 +143,6 @@ socket.on('all-users-retrieved', (data) => {
 
 // Listen for signaling data from the server
 socket.on('signal', (data) => {
-    console.log("Hello world");
     if (data.type === 'video-stopped') {
         const remoteVideo = connectedUsers.get(data.userId);
         if (remoteVideo) {
@@ -158,21 +160,21 @@ socket.on('signal', (data) => {
     }
 });
 
-socket.on('user-connected', (data) => {
-    console.log(`User connected: ${data.userId} in room: ${data.roomId}`);
-    if (!peerConnections.has(data.userId)) {
-        setupPeerConnection(data.userId);  // Set up connection for the new user
-    }
-    socket.emit('get-all-users-from-database', { roomId: roomId });
-});
-
 socket.on('user-disconnected', (data) => {
     const videoElement = connectedUsers.get(data.userId);
     if (videoElement) {
-        videoGrid.removeChild(videoElement);  // Remove the video from the grid
+        // Stop the media tracks of the video stream
+        const mediaStream = videoElement.srcObject;
+        if (mediaStream) {
+            mediaStream.getTracks().forEach((track) => track.stop()); // Stop all tracks
+        }
+
+        videoElement.srcObject = null; // Disconnect the video element from the stream
+        videoGrid.removeChild(videoElement);  // Remove the video element from the DOM
         connectedUsers.delete(data.userId); // Remove the user from the map
     }
 
+    // Close the peer connection
     const peerConnection = peerConnections.get(data.userId);
     if (peerConnection) {
         peerConnection.close();  // Close the peer connection
@@ -182,25 +184,13 @@ socket.on('user-disconnected', (data) => {
     console.log(`User disconnected: ${data.userId} from room: ${data.roomId}`);
 });
 
-
-// function resetPeerConnection() {
-//     if (peerConnection) {
-//         peerConnection.getSenders().forEach(sender => {
-//             peerConnection.removeTrack(sender);
-//         });
-//         peerConnection.close();
-//         peerConnection = null;
-//     }
-//     setupPeerConnection(peerUserId); // Reinitialize the peer connection
-// }
-
 // Send ICE candidates to the server (with userId)
 function sendIceCandidate(candidate, peerUserId) {
     socket.emit('signal', {
         type: 'ice-candidate',
         candidate: candidate,
         roomId,
-        userId: peerUserId  // Include the userId in the signaling message
+        userId: userId  // Include the userId in the signaling message
     });
 }
 
@@ -210,7 +200,7 @@ function sendOffer(offer, peerUserId) {
         type: 'offer',
         offer: offer,
         roomId,
-        userId: peerUserId  // Include the userId in the signaling message
+        userId: userId  // Include the userId in the signaling message
     });
 }
 
@@ -220,14 +210,13 @@ function sendAnswer(answer, peerUserId) {
         type: 'answer',
         answer: answer,
         roomId,
-        userId: peerUserId  // Include the userId in the signaling message
+        userId: userId  // Include the userId in the signaling message
     });
 }
 
 // Handle received offer
 function handleOffer(data) {
     const peerUserId = data.userId;  // Retrieve the userId of the offer sender
-
     // If the peer connection doesn't already exist, create it
     if (!peerConnections.has(peerUserId)) {
         setupPeerConnection(peerUserId);
@@ -257,14 +246,14 @@ function handleIceCandidate(data) {
 // Send the offer once the peer connection is ready
 function makeOffer() {
     if (localStream) {
-        userIds.forEach(userId => {
-            if (!peerConnections.has(userId)) {
-                setupPeerConnection(userId);
+        userIds.forEach(peerUserId => {
+            if (!peerConnections.has(peerUserId)) {
+                setupPeerConnection(peerUserId);
             }
-            const peerConnection = peerConnections.get(userId);
+            const peerConnection = peerConnections.get(peerUserId);
             peerConnection.createOffer()
                 .then(offer => peerConnection.setLocalDescription(offer))
-                .then(() => sendOffer(peerConnection.localDescription, userId))
+                .then(() => sendOffer(peerConnection.localDescription, peerUserId))
                 .catch(err => console.error('Error creating offer: ', err));
         });
     } else {
@@ -273,4 +262,4 @@ function makeOffer() {
 }
 
 
-retrieveAllUsersFromDatabase()
+retrieveAllUsersFromDatabase();
