@@ -29,8 +29,7 @@ io.on('connection', (socket) => {
             const list_of_chat_room_user_ids = chat_room_users.map((user) => user.userId);
             const messages = await getAllMessagesFromUsersSorted(list_of_chat_room_user_ids);
             const list_of_usernames = chat_room_users.map((user) => user.username);
-            socket.emit('all-users-retrieved', { chat_room_users: list_of_chat_room_user_ids, userId: data.userId, usernames: list_of_usernames });
-            socket.emit('receive-chat-messages', { messages: messages });
+            socket.emit('all-users-retrieved', { chat_room_users: list_of_chat_room_user_ids, userId: data.userId, usernames: list_of_usernames, messages });
         } catch (error) {
             console.error('Error fetching users:', error);
             socket.emit('error', {message: 'Failed to retrieve chat room users'});

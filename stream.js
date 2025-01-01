@@ -1,10 +1,10 @@
 import { User, getRandomColor } from './user.js';
-import { updateChatWithMessages } from "./chat_messages.js";
+import { updateChatWithMessages, mapUsersToMessages } from "./chat_messages.js";
 
 export const userId = "google123"; // Unique identifier for the user
 export const username= "google";
 export const roomId = "room123"; // Unique identifier for the room
-export const socket = io("http://localhost:3000", { query: { userId, roomId } });
+export const socket = io("http://3.10.214.5:3000", { query: { userId, roomId } });
 
 export let userIds = [];
 export let usernames = [];
@@ -150,18 +150,14 @@ socket.on('all-users-retrieved', (data) => {
         users.push(new User(data.chat_room_users[index], data.usernames[index], getRandomColor()));
     }
 
+    messages = mapUsersToMessages(data);
+
     console.log('Users retrieved:', userIds);
     startLocalWebcam();
 });
 
 socket.on('receive-chat-messages', (data) => {
-    const userMap = new Map(users.map(user => [user.id, user.color]));
-    console.log(userMap);
-    const changed_messages = data.messages.map(message => ({
-        ...message,
-        color: userMap.get(message.userId) || null, // Add color or null if not found
-    }));
-    messages = changed_messages;
+    messages = mapUsersToMessages(data);
     updateChatWithMessages();
 });
 

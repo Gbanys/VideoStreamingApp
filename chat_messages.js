@@ -12,6 +12,16 @@ export function updateChatWithMessages(){
     }
 }
 
+export function mapUsersToMessages(data){
+    const userMap = new Map(users.map(user => [user.id, user.color]));
+    console.log(userMap);
+    const changed_messages = data.messages.map(message => ({
+        ...message,
+        color: userMap.get(message.userId) || null, // Add color or null if not found
+    }));
+    return changed_messages;
+}
+
 function sendMessage(){
     let message_text = document.getElementById('user-input-box').value;
     let allUserIds = userIds;
