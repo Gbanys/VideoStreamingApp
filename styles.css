@@ -165,3 +165,51 @@ video {
 #end_call:hover{
     background-color: #b51717;
 }
+
+/* Keyframe for emoji float animation */
+@keyframes floatUp {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: translateY(-150px) scale(1.2);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-200px) scale(0.8);
+    }
+}
+
+/* Styling for animated emojis */
+.emoji {
+    position: absolute;
+    font-size: 2rem;
+    animation: floatUp 2s ease-out;
+    will-change: transform, opacity;
+}
+
+.emoji-popup {
+    position: absolute;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    gap: 10px;
+    top: 50px; /* Position relative to the trigger */
+    left: 50%; /* Center align */
+    transform: translateX(-50%);
+    z-index: 1000;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.emoji-popup.hidden {
+    display: none;
+}
+
+.emoji-popup span {
+    cursor: pointer;
+    font-size: 1.5rem;
+}

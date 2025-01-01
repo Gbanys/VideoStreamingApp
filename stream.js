@@ -1,5 +1,6 @@
 import { User, getRandomColor } from './user.js';
 import { updateChatWithMessages, mapUsersToMessages } from "./chat_messages.js";
+import { triggerEmoji } from "./emoji.js";
 
 export const userId = "google123"; // Unique identifier for the user
 export const username= "google";
@@ -162,6 +163,9 @@ socket.on('receive-chat-messages', (data) => {
     updateChatWithMessages();
 });
 
+socket.on('receive-emoji', (data) => {
+    triggerEmoji(data.emoji, true);
+})
 
 // Listen for signaling data from the server
 socket.on('signal', (data) => {
