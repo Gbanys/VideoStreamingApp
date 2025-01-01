@@ -11,7 +11,7 @@ export let usernames = [];
 export let users = [];
 export let messages = [];
 
-let localStream;
+export let localStream;
 let peerConnections = new Map(); // Map to track peer connections by userId
 const videoGrid = document.getElementById("video-grid");
 const connectedUsers = new Map(); // Map to track users and their video elements
