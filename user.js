@@ -36,9 +36,14 @@ export class User {
 }
 
 export function getRandomColor() {
-    const randomHex = () => Math.floor(Math.random() * 256).toString(16).padStart(2, '0');
-    const red = randomHex();
-    const green = randomHex();
-    const blue = randomHex();
+    const randomBrightHex = () =>
+        Math.floor(128 + Math.random() * 128) // Restrict range to 128–255 for brighter colors
+            .toString(16)
+            .padStart(2, '0');
+
+    const red = randomBrightHex();
+    const green = randomBrightHex();
+    const blue = randomBrightHex();
+
     return `#${red}${green}${blue}`;
 }

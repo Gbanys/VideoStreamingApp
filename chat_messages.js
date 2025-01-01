@@ -1,31 +1,40 @@
-import {users, userId, userIds, messages, socket, roomId} from './stream.js';
+import {users, userId, userIds, messages, socket, roomId, username} from './stream.js';
 
 export function updateChatWithMessages(){
     const messagesBox = document.querySelector('.messages-box');
     messagesBox.innerHTML = ``;
     for (let message of messages) {
-        let userMessage = document.createElement('p');
-        console.log(message.color);
-        userMessage.innerText = `${message.userId} : ${message.text}`;
-        userMessage.style.backgroundColor = message.color;
-        messagesBox.prepend(userMessage);
+        let userMessageDiv = document.createElement('div');
+        userMessageDiv.innerHTML = `
+            <div class="message-content">
+                <p id="message-username">${message.username}</p>
+                <p id="message-main-text">${message.text}</p>
+                <p id="message-timestamp">${message.message_timestamp}</p>
+            </div>
+        `
+        userMessageDiv.style.backgroundColor = message.color;
+        messagesBox.prepend(userMessageDiv);
     }
 }
 
 export function mapUsersToMessages(data){
-    const userMap = new Map(users.map(user => [user.id, user.color]));
-    console.log(userMap);
+    const userColorMap = new Map(users.map(user => [user.id, user.color]));
+    const userNameMap = new Map(users.map(user => [user.id, user.username]));
     const changed_messages = data.messages.map(message => ({
         ...message,
-        color: userMap.get(message.userId) || null, // Add color or null if not found
+        color: userColorMap.get(message.userId) || null,
+        username: userNameMap.get(message.userId) || null,
     }));
     return changed_messages;
 }
 
 function sendMessage(){
+    const userColorMap = new Map(users.map(user => [user.id, user.color]));
     let message_text = document.getElementById('user-input-box').value;
     let allUserIds = userIds;
     allUserIds.push(userId);
+    messages.unshift({username: username, text: message_text, message_timestamp: new Date().toISOString(), color: userColorMap.get(userId)});
+    updateChatWithMessages();
     socket.emit('send-chat-message', { userId, roomId, message_text, allUserIds });
     document.getElementById('user-input-box').value = "";
 }
