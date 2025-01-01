@@ -20,7 +20,7 @@ connection.connect((err) => {
 });
 
 // Example Query: Insert Data
-const insertRoomsIntoChatRoom = (roomId, password) => {
+const createRoom = (roomId, password) => {
   connection.query(
   'INSERT INTO chatroom (roomId, password) VALUES (?, ?)',
   [roomId, password],
@@ -48,6 +48,20 @@ const createUser = (userId, username) => {
 );
 }
 
+export const createMessage = (userId, text) => {
+    connection.query(
+      'INSERT INTO chatmessage (userId, text, message_timestamp) VALUES (?, ?, NOW())',
+      [userId, text],
+      (err, results) => {
+        if (err) {
+          console.error('Error executing query:', err);
+          return;
+        }
+        console.log('Insert successful:', results);
+      }
+    );
+}
+
 const linkUserToChatRoom = (userId, roomId) => {
   connection.query(
   'INSERT INTO chatuser_chatroom (userId, roomId) VALUES (?, ?)',
@@ -73,11 +87,27 @@ const getAllChatRooms = () => {
   });
 }
 
-export const getAllUsersInSpecificChatRoom = (roomId, userId) => {
+export const getAllMessagesFromUsersSorted = (userIds) => {
     return new Promise((resolve, reject) => {
         connection.query(
-            'SELECT * FROM chatuser_chatroom WHERE roomId = (?) AND NOT userId = (?)',
-            [roomId, userId],
+            'SELECT * FROM chatmessage WHERE userId IN (?) ORDER BY message_timestamp DESC',
+            [userIds],
+            (err, results) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(results);
+                }
+            }
+        );
+    });
+};
+
+
+export const getAllUsersInSpecificChatRoom = (roomId) => {
+    return new Promise((resolve, reject) => {
+        connection.query(`SELECT cu.userId, cu.username FROM chatuser_chatroom ccr JOIN chatuser cu ON ccr.userId = cu.userId WHERE ccr.roomId = ?`,
+            [roomId],
             (err, results) => {
                 if (err) {
                     console.error('Error executing query:', err);

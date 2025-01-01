@@ -12,10 +12,60 @@ main{
     background-color: red;
     display: flex;
     justify-content: center;
+    flex-direction: row;
+    justify-items: center;
+    height: 100%;
+    gap: 10%;
+}
+
+.video-grid-and-session-menu{
+    background-color: green;
+    display: flex;
+    justify-content: center;
     flex-direction: column;
     justify-items: center;
     height: 100%;
+    width: 80%;
     gap: 25%;
+}
+
+.messages-sidebar{
+    background-color: white;
+    width: 25%;
+    color: black;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.messages-sidebar h3{
+    margin: 20px;
+}
+
+.messages-box {
+    height: 80%;
+    border: 1px solid black;
+}
+
+#user-input-box{
+    height: 100%;
+    width: 75%;
+    z-index: 999;
+}
+
+.input-section{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    margin-bottom: 15%;
+}
+
+#send-button{
+    background-color: #09507c;
+    color: white;
+    height: 100%;
 }
 
 #connection-box {

@@ -24,5 +24,6 @@ CREATE TABLE IF NOT EXISTS chatmessage (
   messageId INT AUTO_INCREMENT PRIMARY KEY,
   text VARCHAR(1000),
   userId VARCHAR(255),
+  message_timestamp TIMESTAMP,
   FOREIGN KEY (userId) REFERENCES chatuser(userId)
 );

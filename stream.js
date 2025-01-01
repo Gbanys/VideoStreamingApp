@@ -1,9 +1,17 @@
-const userId = "google123"; // Unique identifier for the user
-const roomId = "room123"; // Unique identifier for the room
-const socket = io("http://localhost:3000", { query: { userId, roomId } });
+import { User, getRandomColor } from './user.js';
+import { updateChatWithMessages } from "./chat_messages.js";
+
+export const userId = "google123"; // Unique identifier for the user
+export const username= "google";
+export const roomId = "room123"; // Unique identifier for the room
+export const socket = io("http://localhost:3000", { query: { userId, roomId } });
+
+export let userIds = [];
+export let usernames = [];
+export let users = [];
+export let messages = [];
 
 let localStream;
-let userIds = [];
 let peerConnections = new Map(); // Map to track peer connections by userId
 const videoGrid = document.getElementById("video-grid");
 const connectedUsers = new Map(); // Map to track users and their video elements
@@ -15,7 +23,7 @@ const constraints = {
 };
 
 function retrieveAllUsersFromDatabase(){
-    socket.emit('get-all-users-from-database', { roomId: roomId, userId: userId });
+    socket.emit('get-all-users-and-messages-from-database', { roomId: roomId, userId: userId});
 }
 
 function startLocalWebcam() {
@@ -135,9 +143,26 @@ socket.on('all-users-retrieved', (data) => {
     else if(data.userId !== userId){
         return;
     }
+    usernames = data.usernames;
     userIds = data.chat_room_users;
+
+    for (let index = 0; index < data.chat_room_users.length; index++) {
+        users.push(new User(data.chat_room_users[index], data.usernames[index], getRandomColor()));
+    }
+
     console.log('Users retrieved:', userIds);
     startLocalWebcam();
+});
+
+socket.on('receive-chat-messages', (data) => {
+    const userMap = new Map(users.map(user => [user.id, user.color]));
+    console.log(userMap);
+    const changed_messages = data.messages.map(message => ({
+        ...message,
+        color: userMap.get(message.userId) || null, // Add color or null if not found
+    }));
+    messages = changed_messages;
+    updateChatWithMessages();
 });
 
 
