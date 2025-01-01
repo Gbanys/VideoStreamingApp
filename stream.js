@@ -152,11 +152,13 @@ socket.on('all-users-retrieved', (data) => {
 
     messages = mapUsersToMessages(data);
 
+    userIds = userIds.filter(userIdFromArray => userIdFromArray !== userId);
     console.log('Users retrieved:', userIds);
     startLocalWebcam();
 });
 
 socket.on('receive-chat-messages', (data) => {
+    window.alert("Hello world!!!!");
     messages = mapUsersToMessages(data);
     updateChatWithMessages();
 });
