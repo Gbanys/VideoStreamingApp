@@ -50,8 +50,9 @@ io.on('connection', (socket) => {
     	createMessage(data.userId, data.message_text);
         try {
             const messages = await getAllMessagesFromUsersSorted(data.allUserIds);
-            console.log(messages);
-            socket.to(data.roomId).emit('receive-chat-messages', { messages });
+            console.log("Chat room messages:", messages);
+            socket.broadcast.emit('receive-chat-messages', { messages });
+            socket.emit('receive-chat-messages', { messages });
         } catch (err) {
             console.error('Failed to retrieve messages:', err);
         }

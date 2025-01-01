@@ -158,7 +158,6 @@ socket.on('all-users-retrieved', (data) => {
 });
 
 socket.on('receive-chat-messages', (data) => {
-    window.alert("Hello world!!!!");
     messages = mapUsersToMessages(data);
     updateChatWithMessages();
 });
