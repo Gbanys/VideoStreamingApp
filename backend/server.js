@@ -2,6 +2,7 @@ const { getAllUsersInSpecificChatRoom, createMessage, getAllMessagesFromUsersSor
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
+const {checkRoomWithPasswordAndUser, getUsernameByUserId} = require("./database/database_functions");
 
 const app = express();
 const server = http.createServer(app);
@@ -10,17 +11,23 @@ const io = socketIo(server);
 app.use(express.static('public'));
 
 // Handle connections
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
     const userId = socket.handshake.query.userId;
     const roomId = socket.handshake.query.roomId;
+    const roomPassword = socket.handshake.query.roomPassword;
 
-    console.log(`User connected: ${userId} to room: ${roomId}`);
-
-    // Join the specified room
-    socket.join(roomId);
-
-    // Notify the room about the new connection
-    socket.to(roomId).emit('user-connected', { userId, roomId });
+    let recordExists = await checkRoomWithPasswordAndUser(roomId, roomPassword, userId);
+    if(recordExists){
+        socket.join(roomId);
+        console.log(`User connected: ${userId} to room: ${roomId}`);
+        let query_result = await getUsernameByUserId(userId);
+        let username = query_result[0].username;
+        socket.emit('validation-message', { isValidated: true, username: username});
+        socket.to(roomId).emit('user-connected', { userId, roomId });
+    }
+    else{
+        socket.emit('validation-message', { isValidated: false });
+    }
 
     socket.on('get-all-users-and-messages-from-database', async (data) => {
         try {
@@ -45,6 +52,9 @@ io.on('connection', (socket) => {
         // Handle other signal types (offer/answer/ice-candidate
             socket.to(data.roomId).emit('signal', data);
         }
+    });
+    socket.on('send-emoji', (data) => {
+       socket.to(data.roomId).emit('receive-emoji', data);
     });
     socket.on('send-chat-message', async (data) => {
     	createMessage(data.userId, data.message_text);

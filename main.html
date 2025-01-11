@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Main Page</title>
+    <script>
+        function openIndexPage(event) {
+            event.preventDefault();
+            window.electronAPI.sendToMain('open-index-page', {
+                userId: document.getElementById('user-id').value,
+                roomId: document.getElementById('room-id').value,
+                roomPassword: document.getElementById('room-password').value
+            });
+        }
+    </script>
+</head>
+<body>
+    <div class="main-container">
+      <div class="input-container">
+          <form class="room-form" onsubmit="openIndexPage(event)">
+              <h2>Welcome to VXStream</h2>
+              <label for="user-id">User ID:</label>
+              <input id="user-id" type="text" required>
+              <label for="room-id">Room ID:</label>
+              <input id="room-id" type="text" required>
+              <label for="room-password">Room password:</label>
+              <input id="room-password" type="text" required>
+              <input id="room-form-submit-button" type="submit" value="Join Room">
+          </form>
+      </div>
+    </div>
+</body>
+</html>

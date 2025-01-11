@@ -1,4 +1,4 @@
-import {users, userId, userIds, messages, socket, roomId, username} from './stream.js';
+import {users, userId, userIds, roomId, socket, messages, username} from './stream.js';
 
 export function updateChatWithMessages(){
     const messagesBox = document.querySelector('.messages-box');
