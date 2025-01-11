@@ -77,7 +77,7 @@ const linkUserToChatRoom = (userId, roomId) => {
 }
 
 // Example Query: Fetch Data
-const getAllChatRooms = () => {
+export const getAllChatRooms = () => {
   connection.query('SELECT * FROM chatroom', (err, results) => {
   if (err) {
     console.error('Error executing query:', err);
@@ -85,6 +85,23 @@ const getAllChatRooms = () => {
   }
   console.log('Chatrooms:', results);
   });
+}
+
+export const getUsernameByUserId = (userId) => {
+    return new Promise((resolve, reject) => {
+        connection.query(
+            'SELECT username FROM chatuser WHERE userId = ?',
+            [userId],
+            (err, results) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    console.log(results);
+                    resolve(results);
+                }
+            }
+        )
+    })
 }
 
 export const getAllMessagesFromUsersSorted = (userIds) => {
@@ -118,5 +135,29 @@ export const getAllUsersInSpecificChatRoom = (roomId) => {
                 }
             }
         );
+    });
+};
+
+export const checkRoomWithPasswordAndUser = (roomId, password, userId) => {
+    return new Promise((resolve, reject) => {
+        // SQL query to check the existence of the room with the given password and userId
+        const query = `
+            SELECT COUNT(*) AS count
+            FROM chatroom cr
+            JOIN chatuser_chatroom ccr ON cr.roomId = ccr.roomId
+            WHERE cr.roomId = ? AND cr.password = ? AND ccr.userId = ?;
+        `;
+
+        // Execute the query
+        connection.query(query, [roomId, password, userId], (err, results) => {
+            if (err) {
+                console.error('Error executing query:', err);
+                reject(err); // Reject the promise with the error
+            } else {
+                const exists = results[0].count > 0; // Check if count is greater than 0
+                console.log(exists);
+                resolve(exists); // Resolve the promise with a boolean (true/false)
+            }
+        });
     });
 };

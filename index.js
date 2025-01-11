@@ -1,29 +1,63 @@
-const { app, BrowserWindow } = require('electron/main')
-const path = require('node:path')
+const { app, BrowserWindow, ipcMain } = require('electron');
+const path = require('path');
+const io = require('socket.io-client');
 
-function createWindow () {
-  const win = new BrowserWindow({
-    width: 1600,
-    height: 1000,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js')
-    },
-  })
-  win.loadFile('index.html')
+let mainWindow;
+let userId;
+let roomId;
+let socket;
+
+function createWindow() {
+    mainWindow = new BrowserWindow({
+        width: 1600,
+        height: 1000,
+        webPreferences: {
+            preload: path.join(__dirname, 'preload.js'),
+            contextIsolation: true,
+            enableRemoteModule: false,
+        },
+    });
+
+    mainWindow.loadFile('main.html');
 }
 
 app.whenReady().then(() => {
-  createWindow()
+    createWindow();
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow()
-    }
-  })
-})
+    app.on('activate', () => {
+        if (BrowserWindow.getAllWindows().length === 0) {
+            createWindow();
+        }
+    });
+});
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
+    if (process.platform !== 'darwin') {
+        app.quit();
+    }
+});
+
+// Send message to renderer process
+ipcMain.on('open-index-page', (event, data) => {
+    console.log('Received message from renderer:', data);
+    roomId = data.roomId;
+    let roomPassword = data.roomPassword;
+    userId = data.userId;
+    socket = io("http://18.130.218.214:3000", { query: { roomId, roomPassword, userId } });
+
+    socket.on('validation-message', (data) => {
+        if (data.isValidated) {
+            // Send userId and roomId to the renderer process
+            let username = data.username;
+            console.log('Sending validation-success with:', { userId, roomId });
+            //mainWindow.webContents.send('validation-success', { userId, roomId });
+            socket.close();
+            mainWindow.loadFile('index.html').then(() => {
+                mainWindow.webContents.send('validation-success', { userId, roomId, roomPassword, username });
+            });
+        } else {
+            mainWindow.webContents.executeJavaScript(`alert("Sorry, we could not validate these credentials. Please try again.")`);
+        }
+    });
+});
+

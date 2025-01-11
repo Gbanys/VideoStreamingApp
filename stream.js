@@ -2,10 +2,11 @@ import { User, getRandomColor } from './user.js';
 import { updateChatWithMessages, mapUsersToMessages } from "./chat_messages.js";
 import { triggerEmoji } from "./emoji.js";
 
-export const userId = "google123"; // Unique identifier for the user
-export const username= "google";
-export const roomId = "room123"; // Unique identifier for the room
-export const socket = io("http://3.10.214.5:3000", { query: { userId, roomId } });
+export let username;
+export let userId;
+export let roomId;
+export let socket;
+export let roomPassword;
 
 export let userIds = [];
 export let usernames = [];
@@ -136,79 +137,79 @@ function setupPeerConnection(peerUserId) {
     peerConnections.set(peerUserId, peerConnection);
 }
 
-socket.on('all-users-retrieved', (data) => {
-    if (!data || !data.chat_room_users) {
-        console.error('Invalid data received from server');
-        return;
-    }
-    else if(data.userId !== userId){
-        return;
-    }
-    usernames = data.usernames;
-    userIds = data.chat_room_users;
-
-    for (let index = 0; index < data.chat_room_users.length; index++) {
-        users.push(new User(data.chat_room_users[index], data.usernames[index], getRandomColor()));
-    }
-
-    messages = mapUsersToMessages(data);
-
-    userIds = userIds.filter(userIdFromArray => userIdFromArray !== userId);
-    console.log('Users retrieved:', userIds);
-    startLocalWebcam();
-});
-
-socket.on('receive-chat-messages', (data) => {
-    messages = mapUsersToMessages(data);
-    updateChatWithMessages();
-});
-
-socket.on('receive-emoji', (data) => {
-    triggerEmoji(data.emoji, true);
-})
-
-// Listen for signaling data from the server
-socket.on('signal', (data) => {
-    if (data.type === 'video-stopped') {
-        const remoteVideo = connectedUsers.get(data.userId);
-        if (remoteVideo) {
-            remoteVideo.srcObject = null;
+function initializeSocketEvents() {
+    socket.on('all-users-retrieved', (data) => {
+        if (!data || !data.chat_room_users) {
+            console.error('Invalid data received from server');
+            return;
+        } else if (data.userId !== userId) {
+            return;
         }
-    } else if (data.type === 'video-started') {
-        console.log('Remote user started their video.');
-    }
-    else if (data.type === 'offer') {
-        handleOffer(data);
-    } else if (data.type === 'answer') {
-        handleAnswer(data);
-    } else if (data.type === 'ice-candidate') {
-        handleIceCandidate(data);
-    }
-});
+        usernames = data.usernames;
+        userIds = data.chat_room_users;
 
-socket.on('user-disconnected', (data) => {
-    const videoElement = connectedUsers.get(data.userId);
-    if (videoElement) {
-        // Stop the media tracks of the video stream
-        const mediaStream = videoElement.srcObject;
-        if (mediaStream) {
-            mediaStream.getTracks().forEach((track) => track.stop()); // Stop all tracks
+        for (let index = 0; index < data.chat_room_users.length; index++) {
+            users.push(new User(data.chat_room_users[index], data.usernames[index], getRandomColor()));
         }
 
-        videoElement.srcObject = null; // Disconnect the video element from the stream
-        videoGrid.removeChild(videoElement);  // Remove the video element from the DOM
-        connectedUsers.delete(data.userId); // Remove the user from the map
-    }
+        messages = mapUsersToMessages(data);
 
-    // Close the peer connection
-    const peerConnection = peerConnections.get(data.userId);
-    if (peerConnection) {
-        peerConnection.close();  // Close the peer connection
-        peerConnections.delete(data.userId);  // Remove the peer connection from the map
-    }
+        userIds = userIds.filter(userIdFromArray => userIdFromArray !== userId);
+        console.log('Users retrieved:', userIds);
+        startLocalWebcam();
+    });
 
-    console.log(`User disconnected: ${data.userId} from room: ${data.roomId}`);
-});
+    socket.on('receive-chat-messages', (data) => {
+        messages = mapUsersToMessages(data);
+        updateChatWithMessages();
+    });
+
+    socket.on('receive-emoji', (data) => {
+        triggerEmoji(data.emoji, true);
+    })
+
+    // Listen for signaling data from the server
+    socket.on('signal', (data) => {
+        if (data.type === 'video-stopped') {
+            const remoteVideo = connectedUsers.get(data.userId);
+            if (remoteVideo) {
+                remoteVideo.srcObject = null;
+            }
+        } else if (data.type === 'video-started') {
+            console.log('Remote user started their video.');
+        } else if (data.type === 'offer') {
+            handleOffer(data);
+        } else if (data.type === 'answer') {
+            handleAnswer(data);
+        } else if (data.type === 'ice-candidate') {
+            handleIceCandidate(data);
+        }
+    });
+
+    socket.on('user-disconnected', (data) => {
+        const videoElement = connectedUsers.get(data.userId);
+        if (videoElement) {
+            // Stop the media tracks of the video stream
+            const mediaStream = videoElement.srcObject;
+            if (mediaStream) {
+                mediaStream.getTracks().forEach((track) => track.stop()); // Stop all tracks
+            }
+
+            videoElement.srcObject = null; // Disconnect the video element from the stream
+            videoGrid.removeChild(videoElement);  // Remove the video element from the DOM
+            connectedUsers.delete(data.userId); // Remove the user from the map
+        }
+
+        // Close the peer connection
+        const peerConnection = peerConnections.get(data.userId);
+        if (peerConnection) {
+            peerConnection.close();  // Close the peer connection
+            peerConnections.delete(data.userId);  // Remove the peer connection from the map
+        }
+
+        console.log(`User disconnected: ${data.userId} from room: ${data.roomId}`);
+    });
+}
 
 // Send ICE candidates to the server (with userId)
 function sendIceCandidate(candidate, peerUserId) {
@@ -287,5 +288,19 @@ function makeOffer() {
     }
 }
 
+window.addEventListener('userIdRoomIdUpdated', (event) => {
+    userId = event.detail.userId;
+    roomId = event.detail.roomId;
+    roomPassword = event.detail.roomPassword;
+    username = event.detail.username;
 
-retrieveAllUsersFromDatabase();
+    console.log('Stream.js received userId:', userId);
+    console.log('Stream.js received roomId:', roomId);
+    console.log('Stream.js received roomPassword', roomPassword);
+    console.log('Stream.js received username', username);
+
+    socket = io("http://18.130.218.214:3000", { query: { roomId, roomPassword, userId } });
+
+    initializeSocketEvents();
+    retrieveAllUsersFromDatabase();
+});
