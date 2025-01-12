@@ -1,19 +1,40 @@
 import {users, userId, userIds, roomId, socket, messages, username} from './stream.js';
 
+function formatDateTime(timestamp) {
+    const date = new Date(timestamp);
+
+    const options = {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+    };
+
+    return date.toLocaleString('en-GB', options); // Customize 'en-US' for other locales
+}
+
 export function updateChatWithMessages(){
     const messagesBox = document.querySelector('.messages-box');
     messagesBox.innerHTML = ``;
     for (let message of messages) {
-        let userMessageDiv = document.createElement('div');
-        userMessageDiv.innerHTML = `
-            <div class="message-content">
-                <p id="message-username">${message.username}</p>
-                <p id="message-main-text">${message.text}</p>
-                <p id="message-timestamp">${message.message_timestamp}</p>
+        const isCurrentUser = message.username === username;
+        const alignmentClass = isCurrentUser ? 'current-user' : 'other-user';
+        const messageColor = message.color;
+        const formattedDateTime = formatDateTime(message.message_timestamp);
+        const messageHTML = `
+            <div class="message-container ${alignmentClass}">
+                <p class="message-username">${message.username}</p>
+                <div class="message-bubble" style="background-color: ${messageColor};">
+                    ${message.text}
+                </div>
+                <p class="message-timestamp">${formattedDateTime}</p>
             </div>
         `
-        userMessageDiv.style.backgroundColor = message.color;
-        messagesBox.prepend(userMessageDiv);
+        messagesBox.innerHTML = messageHTML + messagesBox.innerHTML;
     }
 }
 
@@ -61,6 +82,14 @@ function displayOrHideChatMessages() {
         const messageSendButton = document.getElementById('send-button');
         messageSendButton.addEventListener('click', sendMessage);
 
+        const userInputBox = document.getElementById('user-input-box');
+        userInputBox.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+
         updateChatWithMessages();
 
     } else {
@@ -71,4 +100,3 @@ function displayOrHideChatMessages() {
 
 const chatBubble = document.getElementById('chat_bubble');
 chatBubble.addEventListener('click', displayOrHideChatMessages);
-

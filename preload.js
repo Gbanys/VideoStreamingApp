@@ -19,8 +19,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
         }
     },
     onValidationSuccess: (callback) => {
-        ipcRenderer.removeAllListeners('validation-success'); // Avoid duplicate listeners
+        ipcRenderer.removeAllListeners('validation-success');
         ipcRenderer.on('validation-success', (event, data) => callback(data));
     },
+    sendEndCall: () => ipcRenderer.send('end-call'),
 });
 
+ipcRenderer.on('validation-error', (event, errorMessage) => {
+    const errorElement = document.createElement("p");
+    const errorElementDiv = document.getElementById('validation_error_message_div');
+    errorElement.id = "validation_error_message";
+    errorElement.innerText = errorMessage;
+    errorElementDiv.appendChild(errorElement);
+});

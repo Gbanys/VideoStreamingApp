@@ -3,6 +3,8 @@ export let roomId; // Dynamically updated
 export let roomPassword;// Dynamically updated
 export let username;
 
+const endCallButton = document.getElementById('end_call');
+
 // Listen for the validation-success event
 window.electronAPI.onValidationSuccess((data) => {
     userId = data.userId;
@@ -21,5 +23,10 @@ window.electronAPI.onValidationSuccess((data) => {
     });
     window.dispatchEvent(event);
 });
+
+endCallButton.addEventListener('click', () => {
+    window.electronAPI.sendEndCall(); // Use the exposed function to send the event
+});
+
 
 

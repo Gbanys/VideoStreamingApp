@@ -20,13 +20,14 @@
     <div class="main-container">
       <div class="input-container">
           <form class="room-form" onsubmit="openIndexPage(event)">
-              <h2>Welcome to VXStream</h2>
+              <h2>VXStream</h2>
+              <div id="validation_error_message_div"></div>
               <label for="user-id">User ID:</label>
               <input id="user-id" type="text" required>
               <label for="room-id">Room ID:</label>
               <input id="room-id" type="text" required>
               <label for="room-password">Room password:</label>
-              <input id="room-password" type="text" required>
+              <input id="room-password" type="password" required>
               <input id="room-form-submit-button" type="submit" value="Join Room">
           </form>
       </div>

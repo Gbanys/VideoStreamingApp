@@ -25,12 +25,12 @@ main{
     justify-items: center;
     height: 100%;
     width: 80%;
-    gap: 25%;
+    gap: 5rem;
 }
 
 .messages-sidebar{
     background-color: white;
-    width: 25%;
+    width: 40%;
     color: black;
     display: flex;
     flex-direction: column;
@@ -43,10 +43,33 @@ main{
 
 .messages-box {
     height: 80%;
-    border: 1px solid black;
-    overflow: scroll;
-    border-radius: 10px;
     margin: 10px;
+    overflow-x: hidden;
+    overflow-y: scroll;
+}
+
+.messages-box::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.messages-box::-webkit-scrollbar-track {
+    background: #f0f0f0;
+    border-radius: 5px;
+}
+
+.messages-box::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 5px;
+    border: 2px solid #f0f0f0;
+}
+
+.messages-box::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.messages-box::-webkit-scrollbar-corner {
+    background: #f0f0f0;
 }
 
 .messages-box div{
@@ -54,23 +77,62 @@ main{
     margin: 10px;
 }
 
-.message-content{
-    padding: 5px;
+.message-container {
+    display: flex;
+    flex-direction: column;
+    margin: 10px 0;
 }
 
-#message-main-text{
-    padding: 2px;
-}
 
-#message-username{
+.current-user .message-username {
     font-size: 0.8rem;
-    padding: 2px;
+    margin: 0 0 2px;
+    color: #555;
+    align-self: flex-end;
 }
 
-#message-timestamp{
-    font-size: 0.5rem;
-    text-align: end;
+.other-user .message-username {
+    font-size: 0.8rem;
+    margin: 0 0 2px;
+    color: #555;
+    align-self: flex-start;
 }
+
+
+.message-bubble {
+    display: inline-block;
+    padding: 10px;
+    border-radius: 10px;
+    color: white;
+    max-width: 75%;
+    word-wrap: break-word;
+}
+
+
+.current-user .message-timestamp {
+    font-size: 0.8rem;
+    margin: 5px 0 0;
+    color: #777;
+    align-self: flex-end;
+}
+
+.other-user .message-timestamp {
+    font-size: 0.8rem;
+    margin: 5px 0 0;
+    color: #777;
+    align-self: flex-start;
+}
+
+/* Differentiate the current user's message */
+.current-user .message-bubble {
+    align-self: flex-end; /* Align to the right for current user */
+}
+
+/* Other user's message */
+.other-user .message-bubble {
+    align-self: flex-start; /* Align to the left for other users */
+}
+
 
 #user-input-box{
     height: 100%;
@@ -107,23 +169,23 @@ main{
 }
 
 #video-grid {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-    gap: 100px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(20em, 1fr));
+    gap: 10px;
     padding: 10px;
     max-width: 80em;
-    background: rgba(0, 0, 0, 0.5);
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    background-color: #3c3c3c;
 }
 
 video {
-    width: 20em;
+    width: 100%; /* Automatically fill the grid cell */
     height: auto;
     border: 1px solid #666;
     border-radius: 5px;
 }
+
 
 .session-menu{
     display: flex;
@@ -246,7 +308,7 @@ video {
 }
 
 .room-form input{
-    margin: 2rem 0;
+    margin: 0.5rem 0 2rem 0;
     background-color: black;
     color: white;
     padding: 1rem;
@@ -263,4 +325,12 @@ video {
     background-color: #0fbc0f;
     transition: 0.2s ease-in;
     cursor: pointer;
+}
+
+#validation_error_message{
+    background-color: #faeaa8;
+    color: #885408;
+    font-weight: bold;
+    border-radius: 10px;
+    padding: 10px;
 }

@@ -299,7 +299,7 @@ window.addEventListener('userIdRoomIdUpdated', (event) => {
     console.log('Stream.js received roomPassword', roomPassword);
     console.log('Stream.js received username', username);
 
-    socket = io("http://18.130.218.214:3000", { query: { roomId, roomPassword, userId } });
+    socket = io("http://18.175.219.55:3000", { query: { roomId, roomPassword, userId } });
 
     initializeSocketEvents();
     retrieveAllUsersFromDatabase();

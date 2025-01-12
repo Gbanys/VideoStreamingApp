@@ -43,21 +43,25 @@ ipcMain.on('open-index-page', (event, data) => {
     roomId = data.roomId;
     let roomPassword = data.roomPassword;
     userId = data.userId;
-    socket = io("http://18.130.218.214:3000", { query: { roomId, roomPassword, userId } });
+    socket = io("http://18.175.219.55:3000", { query: { roomId, roomPassword, userId } });
 
     socket.on('validation-message', (data) => {
         if (data.isValidated) {
-            // Send userId and roomId to the renderer process
             let username = data.username;
             console.log('Sending validation-success with:', { userId, roomId });
-            //mainWindow.webContents.send('validation-success', { userId, roomId });
             socket.close();
             mainWindow.loadFile('index.html').then(() => {
                 mainWindow.webContents.send('validation-success', { userId, roomId, roomPassword, username });
             });
         } else {
-            mainWindow.webContents.executeJavaScript(`alert("Sorry, we could not validate these credentials. Please try again.")`);
+            mainWindow.webContents.send('validation-error', "Sorry, we could not validate these details. Please try again.");
         }
     });
 });
+
+ipcMain.on('end-call', () => {
+    console.log('End call button clicked. Closing the application.');
+    app.quit();
+});
+
 
