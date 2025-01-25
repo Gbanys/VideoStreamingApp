@@ -25,7 +25,7 @@ main{
     justify-items: center;
     height: 100%;
     width: 80%;
-    gap: 5rem;
+    gap: 1.5rem;
 }
 
 .messages-sidebar{
@@ -170,20 +170,41 @@ main{
 
 #video-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(20em, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(13em, 1fr));
     gap: 10px;
     padding: 10px;
-    max-width: 80em;
+    max-width: 35em;
+    max-height: 40em;
+    overflow: hidden;
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     background-color: #3c3c3c;
 }
 
-video {
-    width: 100%; /* Automatically fill the grid cell */
-    height: auto;
-    border: 1px solid #666;
+#video-grid img {
+    width: 100%; /* Ensures images resize to fit grid cells */
+    height: auto; /* Maintains aspect ratio */
+    object-fit: cover; /* Ensures the image fits nicely inside grid cells */
+    border-radius: 5px; /* Optional: adds rounded corners to images */
+    border: 1px solid #666; /* Optional: adds a border to the images */
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box; /* Ensures padding and borders are included in the element's size */
+}
+
+/*video {*/
+/*    width: 100%; !* Automatically fill the grid cell *!*/
+/*    height: auto;*/
+/*    border: 1px solid #666;*/
+/*    border-radius: 5px;*/
+/*}*/
+
+#video-grid video {
+    width: 100%; /* Make the video match the width of the grid cell */
+    height: 100%; /* Make the video match the height of the grid cell */
+    object-fit: cover; /* Crop the video to fill the grid cell while preserving aspect ratio */
     border-radius: 5px;
+    border: 1px solid #666;
 }
 
 

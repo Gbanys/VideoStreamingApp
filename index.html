@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="background-color: red;">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,12 +15,14 @@
     <script src="chat_messages.js" type="module" defer></script>
     <script src="renderer.js" type="module" async></script>
 </head>
-<body>
+<body style="background-color: #656565; background-image: none;">
     <main>
         <div class="video-grid-and-session-menu">
             <div id="connection-box">
                 <div id="video-grid">
                     <div id="emoji-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></div>
+                    <img src="random_user.png" alt="random-user"/>
+                    <img src="random_user.png" alt="random-user"/>
                 </div>
             </div>
             <div class="session-menu">
@@ -28,6 +30,7 @@
                 <span id="microphone" class="material-symbols-outlined">mic</span>
                 <span id="chat_bubble" class="material-symbols-outlined">chat_bubble</span>
                 <span id="reaction" class="material-symbols-outlined">add_reaction</span>
+                <span id="screen_share" class="material-symbols-outlined">screen_share</span>
                 <span id="end_call" class="material-symbols-outlined" onclick="endCall(event)">call_end</span>
                 <p id="time"></p>
             </div>

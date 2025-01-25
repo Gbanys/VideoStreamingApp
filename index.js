@@ -11,6 +11,7 @@ function createWindow() {
     mainWindow = new BrowserWindow({
         width: 1600,
         height: 1000,
+        autoHideMenuBar: true, // Hide the menu bar by default
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             contextIsolation: true,
@@ -43,7 +44,7 @@ ipcMain.on('open-index-page', (event, data) => {
     roomId = data.roomId;
     let roomPassword = data.roomPassword;
     userId = data.userId;
-    socket = io("http://18.175.219.55:3000", { query: { roomId, roomPassword, userId } });
+    socket = io("http://13.41.191.104:3000", { query: { roomId, roomPassword, userId } });
 
     socket.on('validation-message', (data) => {
         if (data.isValidated) {
